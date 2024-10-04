@@ -71,7 +71,8 @@ class Act:
         # Show the place where the ball will go
         if score <= 10:
             t_pos = (int(self.target_pos[0]), int(self.target_pos[1]))
-            self.place_image_on_top(img, self.target_graphics, t_pos)
+            graphic = self.change_transparency(self.target_graphics, 1-score/10)
+            self.place_image_on_top(img, graphic, t_pos)
         
         cv2.putText(img, f'SCORE: {score}', (int(self.screensize[0]/3),30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
@@ -216,3 +217,30 @@ class Act:
         cv2.putText(image, text, (x, y), font, font_scale, color, thickness, lineType=cv2.LINE_AA)
 
         return image
+
+    @staticmethod
+    def change_transparency(image, alpha_value):
+        """
+        Change the transparency of an image by adjusting the alpha channel.
+
+        Parameters:
+        - image: Input image with an alpha channel (RGBA).
+        - alpha_value: A float between 0.0 (fully transparent) and 1.0 (fully opaque).
+
+        Returns:
+        - The image with adjusted transparency.
+        """
+        if image.shape[2] == 4:  # Ensure the image has an alpha channel
+            # Extract the RGB channels and the alpha channel
+            rgb_channels = image[:, :, :3]
+            alpha_channel = image[:, :, 3]
+
+            # Adjust the alpha channel based on the provided alpha_value
+            adjusted_alpha = (alpha_channel * alpha_value).astype(np.uint8)
+
+            # Merge the RGB channels with the adjusted alpha channel
+            transparent_image = np.dstack([rgb_channels, adjusted_alpha])
+
+            return transparent_image
+        else:
+            raise ValueError("The image does not have an alpha channel (it must be RGBA).")
