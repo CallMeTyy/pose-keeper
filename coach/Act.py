@@ -21,6 +21,10 @@ class Act:
         self.hit_screen = False
         self.target_pos = (0,0)
         self.buttons = []
+        self.game_bg = cv2.imread("coach/assets/field.png")
+        self.main_menu_bg = cv2.imread("coach/assets/blurred_field.png")
+        self.left_hand = cv2.imread("coach/assets/left_hand.png")
+        self.right_hand = cv2.imread("coach/assets/right_hand.png")
 
     def update_ball(self, ball_pos, ball_size, hit_screen):
         self.ball_pos = ball_pos
@@ -45,7 +49,8 @@ class Act:
         Renders the game .
         """
         # Create a black background
-        img = np.zeros((self.screensize[1], self.screensize[0], 3), dtype=np.uint8)
+        img = self.game_bg  # np.ones((self.screensize[1], self.screensize[0], 3), dtype=np.uint8)
+        img = cv2.resize(img, self.screensize, interpolation=cv2.INTER_AREA)
 
 
         # Show the ball
@@ -86,7 +91,8 @@ class Act:
                 cv2.circle(img, pos, self.balloon_size, color, -1)
 
     def visualize_main_menu(self, smoothed_landmarks,visibility):
-        img = np.ones((self.screensize[1], self.screensize[0], 3), dtype=np.uint8)
+        img = self.main_menu_bg#np.ones((self.screensize[1], self.screensize[0], 3), dtype=np.uint8)
+        img = cv2.resize(img, self.screensize,interpolation = cv2.INTER_AREA)
         self.base_scene(img,smoothed_landmarks,visibility)
 
         # Wait for 1 ms and check if the window should be closed
