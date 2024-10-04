@@ -29,6 +29,7 @@ class Act:
         self.right_foot = cv2.imread("coach/assets/right_hand.png",cv2.IMREAD_UNCHANGED)
         self.graphics = [self.right_hand, self.left_hand, self.right_foot, self.left_foot]
         self.ball_graphic = cv2.imread("coach/assets/ball.png",cv2.IMREAD_UNCHANGED)
+        self.target_graphics = cv2.imread("coach/assets/transparent_gloves.png",cv2.IMREAD_UNCHANGED)
 
     def update_ball(self, ball_pos, ball_size, hit_screen):
         self.ball_pos = ball_pos
@@ -68,9 +69,9 @@ class Act:
         #cv2.circle(img, ball_pos_int, ball_rad_int, ball_color, -1)
 
         # Show the place where the ball will go
-        t_pos = (int(self.target_pos[0]), int(self.target_pos[1]))
-        cv2.putText(img, f'!', t_pos,
-                    cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 255, 255), 2, cv2.LINE_AA)
+        if score <= 10:
+            t_pos = (int(self.target_pos[0]), int(self.target_pos[1]))
+            self.place_image_on_top(img, self.target_graphics, t_pos)
         
         cv2.putText(img, f'SCORE: {score}', (int(self.screensize[0]/3),30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
