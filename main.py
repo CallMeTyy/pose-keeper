@@ -23,7 +23,7 @@ def main():
     sense = Sense.Sense()
     act = Act.Act(screen_size)
     think = Think.Think(act, screen_size,4,0.2)
-    think.set_screen(0) # Initialize the main menu
+    think.set_screen(2) # Initialize the instructions
     # Initialize the webcam capture
     cap = cv2.VideoCapture(0)  # Use the default camera (0)
 

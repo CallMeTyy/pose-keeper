@@ -5,6 +5,8 @@ import numpy as np
 import random
 import time
 import vlc
+import cv2
+import sys
 
 
 # Think Component: Decision Making
@@ -32,7 +34,7 @@ class Think(object):
         self.act = act
         self.reset_ball()
         self.buttons = []
-        self.state = 0
+        self.state = 2
         self.score = 0
         self.max_lives = 5
         self.lives = 5
@@ -104,8 +106,9 @@ class Think(object):
     def remove_buttons(self):
         self.buttons.clear()
 
-    def add_button(self,function, position,size,text="Button",color=(230,230,230)):
-        b = Button(function, position, size,self.screensize,text,color)
+    def add_button(self,function, position,size,text="Button",color=(230,230,230),image="",both_hands=False,interaction_time = 1):
+        b = Button(function, position, size,self.screensize,text,color,image=image,both_hands=both_hands)
+        b.interaction_time = interaction_time
         self.buttons.append(b)
         self.act.update_button_list(self.buttons)
 
@@ -118,7 +121,7 @@ class Think(object):
         # Check if hands is touching ball
         catch_ball = False
         if touching_hands:
-            catch_ball = self.touching_ball(smoothed_landmarks[0], 100) or self.touching_ball(smoothed_landmarks[1], 100)
+            catch_ball = self.touching_ball(smoothed_landmarks[0], 120) or self.touching_ball(smoothed_landmarks[1], 120)
             print(catch_ball)
         # Check if right feet is touching ball
         if visibility[2] > 0.1 and not catch_ball:
@@ -131,20 +134,25 @@ class Think(object):
     def set_screen(self, state):
         self.remove_buttons()
         if state == 0:
-            self.add_button(self.start_game, (int(self.screensize[0]/2), int(self.screensize[1]/3*2)),100, "Start")
+            self.add_button(self.start_game, (int(self.screensize[0]/2), int(self.screensize[1]/3*2)),100, "Start",interaction_time=2)
+            self.add_button(self.instructions_menu, (int(self.screensize[0] / 8*7), int(self.screensize[1] / 8)), 60,
+                            "Instructions")
+            self.add_button(sys.exit, (int(self.screensize[0] / 8), int(self.screensize[1] / 8)), 60,
+                            "Exit")
         elif state == 1:
             self.ambience.play()
             self.score = 0
             self.lives = self.max_lives
-            self.add_button(self.main_menu, (50, 50), 50, "Exit")
+            #self.add_button(self.main_menu, (50, 50), 50, "Exit")
+        elif state==2:
+            self.add_button(self.finish_instruction, (int(self.screensize[0] / 2), int(self.screensize[1] / 2)), 150,
+                            image="coach/assets/transparent_gloves.png",both_hands=True)
 
         self.state = state
 
     def update_state(self, smoothed_landmarks, visibility):
         if self.state == 0:
             self.act.visualize_main_menu(smoothed_landmarks, visibility,self.score)
-        if self.ambience.get_state() == vlc.State.Ended:
-            self.play_reset(self.ambience)
         elif self.state == 1:
             if self.move_ball(0.025 + self.score * 0.0025):
                 if self.check_ball_collision(smoothed_landmarks, visibility):
@@ -165,12 +173,24 @@ class Think(object):
                 self.act.visualize_game(smoothed_landmarks, visibility,self.score,self.lives)
             else:
                 self.main_menu()
+        elif self.state == 2:
+            self.act.visualize_instructions(smoothed_landmarks, visibility)
+        if self.ambience.get_state() == vlc.State.Ended:
+            self.play_reset(self.ambience)
 
     def start_game(self):
         self.set_screen(1)
 
     def main_menu(self):
         self.set_screen(0)
+
+    def instructions_menu(self):
+        self.set_screen(2)
+
+    def finish_instruction(self):
+        self.remove_buttons()
+        self.add_button(self.main_menu, (int(self.screensize[0] / 6*5), int(self.screensize[1] / 6*5)), 70,
+                            "OK!")
 
     def play_reset(self,audio):
         if audio.get_state() == vlc.State.Ended:
@@ -192,7 +212,7 @@ class Think(object):
 
 
 class Button(object):
-    def __init__(self, function, position, size, screen_size, text = "Button", color = (255,255,255)):
+    def __init__(self, function, position, size, screen_size, text = "Button", color = (255,255,255), image = "",both_hands = False):
         self.pos = position
         self.size = size
         self.screensize = screen_size
@@ -203,8 +223,12 @@ class Button(object):
         self.color = color
         self.progress = 0
         self.function = function
+        self.image = image
+        self.both_hands = both_hands
+        if self.image:
+            self.image_graphic = cv2.imread(image, cv2.IMREAD_UNCHANGED)
 
-    def test_collision(self, other, other_rad = 25):
+    def test_collision(self, other, other_rad = 100):
         return Think.circle_circle(self.pos,self.size, other, other_rad)
 
     def run(self, hand_positions, invert_hands = False):
@@ -214,7 +238,9 @@ class Button(object):
             r_hand = (self.screensize[0]-r_hand[0],r_hand[1])
             l_hand = (self.screensize[0]-l_hand[0],l_hand[1])
 
-        if self.test_collision(r_hand) or self.test_collision(l_hand):
+        r_hand_collide = self.test_collision(r_hand)
+        l_hand_collide = self.test_collision(l_hand)
+        if ((r_hand_collide or l_hand_collide) and not self.both_hands) or (r_hand_collide and l_hand_collide and self.both_hands):
             if not self.is_colliding:
                 self.is_colliding = True
                 self.interaction_start_time = time.time()

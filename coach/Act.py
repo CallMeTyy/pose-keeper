@@ -46,9 +46,14 @@ class Act:
 
     def visualize_buttons(self,background):
         for button in self.buttons:
-            cv2.circle(background, button.pos, button.size, button.color, -1)
-            cv2.circle(background, button.pos, int(button.size * button.progress), (200, 200, 255), -1)
-            self.put_centered_text(background, button.text, button.pos, cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2)
+            if not button.image:
+                cv2.circle(background, button.pos, button.size, button.color, -1)
+                cv2.circle(background, button.pos, int(button.size * button.progress), (200, 200, 255), -1)
+                self.put_centered_text(background, button.text, button.pos, cv2.FONT_HERSHEY_SIMPLEX, 7/len(button.text), (0,0,0), 2)
+            else:
+                gfx = self.change_transparency(button.image_graphic, 0.4+button.progress*0.6)
+                self.place_image_on_top(background,gfx,button.pos)
+
 
 
     def visualize_game(self, smoothed_landmarks,visibility, score, lives):
@@ -100,7 +105,7 @@ class Act:
         for i in range(len(smoothed_landmarks)):
             vis = visibility[i]
             landmark_pos = smoothed_landmarks[i]
-            if vis > 0.4:
+            if vis > 0.4 or i <= 1:
                 pos = (self.screensize[0] - int(landmark_pos[0]), int(landmark_pos[1]))
                 self.place_image_on_top(img, self.graphics[i], pos)
                 #cv2.circle(img, pos, self.balloon_size, color, -1)
@@ -109,16 +114,44 @@ class Act:
     def visualize_main_menu(self, smoothed_landmarks,visibility,score):
         img = self.main_menu_bg#np.ones((self.screensize[1], self.screensize[0], 3), dtype=np.uint8)
         img = cv2.resize(img, self.screensize,interpolation = cv2.INTER_AREA)
+        self.place_image_on_top(img, self.leaderboard, (int(self.screensize[0] / 6), int(self.screensize[1] / 4 * 3)))
+
+        self.put_centered_text(img, f'Hover over the start button to start!',
+                               (int(self.screensize[0] / 2), int(self.screensize[1] / 8*7)),font_scale=0.8)
+
         self.base_scene(img,smoothed_landmarks,visibility)
 
         self.put_centered_text(img, f'POSEKEEPER',
                                (int(self.screensize[0] / 2), int(self.screensize[1] / 5)))
 
-        self.place_image_on_top(img,self.leaderboard, (int(self.screensize[0]/5), int(self.screensize[1]/4*3)))
+
 
         if score > 0:
             self.put_centered_text(img, f'YOUR SCORE WAS: {score}', (int(self.screensize[0]/2),int(self.screensize[1]/3))
         , cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 4)
+        # Wait for 1 ms and check if the window should be closed
+        cv2.imshow('Keep the ball from entering the goal!', img)
+        cv2.waitKey(1)
+
+    def visualize_instructions(self, smoothed_landmarks,visibility):
+        img = self.main_menu_bg
+        img = cv2.resize(img, self.screensize,interpolation = cv2.INTER_AREA)
+
+        self.base_scene(img,smoothed_landmarks,visibility)
+
+        self.put_centered_text(img, f'Welcome to POSEKEEPER',
+                               (int(self.screensize[0] / 2), int(self.screensize[1] / 8)),color=(0,0,0),font_scale=1.5,thickness=6)
+
+        self.put_centered_text(img, f'Stand at least 1.5 meter from the camera.',
+                               (int(self.screensize[0] / 2), int(self.screensize[1] / 8*2)),color=(0,0,0))
+
+        self.put_centered_text(img, f'Catch the ball!',
+                               (int(self.screensize[0] / 2), int(self.screensize[1] / 8 * 5)),font_scale=1.5,thickness=5)
+        self.put_centered_text(img, f'Try moving your hands to the glove outlines',
+                               (int(self.screensize[0] / 2), int(self.screensize[1] / 10*7)),font_scale=0.8)
+        self.put_centered_text(img, f'Hover over buttons to interact!',
+                               (int(self.screensize[0] / 2), int(self.screensize[1] / 11 * 10)), font_scale=0.8)
+
         # Wait for 1 ms and check if the window should be closed
         cv2.imshow('Keep the ball from entering the goal!', img)
         cv2.waitKey(1)
