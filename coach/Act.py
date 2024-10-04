@@ -20,6 +20,7 @@ class Act:
         self.ball_pos = (0,0)
         self.hit_screen = False
         self.target_pos = (0,0)
+        self.buttons = []
 
     def update_ball(self, ball_pos, ball_size, hit_screen):
         self.ball_pos = ball_pos
@@ -29,18 +30,23 @@ class Act:
     def update_target(self, target_pos):
         self.target_pos = target_pos
 
+    def update_button_list(self, buttons):
+        self.buttons = buttons
+
+    def visualize_buttons(self,background):
+        for button in self.buttons:
+            cv2.circle(background, button.pos, button.size, button.color, -1)
+            cv2.circle(background, button.pos, int(button.size * button.progress), (200, 200, 255), -1)
+            cv2.putText(background, button.text, button.pos-np.array([button.size,0]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2, cv2.LINE_AA)
 
 
-
-    def visualize_game(self, smoothed_landmarks,visibility, score):
+    def visualize_game(self, smoothed_landmarks,visibility, score, lives):
         """
         Renders the game .
         """
         # Create a black background
         img = np.zeros((self.screensize[1], self.screensize[0], 3), dtype=np.uint8)
 
-        fps = 1/(time.time() - self.prevTime)
-        self.prevTime = time.time()
 
         # Show the ball
         ball_color = (255,255,255) if not self.hit_screen else (0,255,0)
@@ -48,31 +54,43 @@ class Act:
         ball_rad_int = int(self.ball_size)
         cv2.circle(img, ball_pos_int, ball_rad_int, ball_color, -1)
 
-        # Show the limbs
-        touching_hands = False
-
-        color = (0,0,255) if not touching_hands else (0,255,0)
-        for landmark_pos,vis in zip(smoothed_landmarks,visibility):
-            if (vis > 0.1):
-                pos = (self.screensize[0]-int(landmark_pos[0]),int(landmark_pos[1]))
-                cv2.circle(img, pos, self.balloon_size, color, -1)
-
-        
         # Show the place where the ball will go
         t_pos = (int(self.target_pos[0]), int(self.target_pos[1]))
         cv2.putText(img, f'!', t_pos,
                     cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 255, 255), 2, cv2.LINE_AA)
-
-        cv2.putText(img, f'FPS: {fps:.2f}', (10,10),
-                    cv2.FONT_HERSHEY_SIMPLEX, .5, (255, 255, 255), 2, cv2.LINE_AA)
         
         cv2.putText(img, f'SCORE: {score}', (int(self.screensize[0]/3),30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
+        cv2.putText(img, f'LIVES: {lives}', (int(self.screensize[0] / 3), 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        self.base_scene(img,smoothed_landmarks,visibility)
         # Show the image in the window
         cv2.imshow('Keep the ball from entering the goal!', img)
 
         # Wait for 1 ms and check if the window should be closed
+        cv2.waitKey(1)
+
+    def base_scene(self,img, smoothed_landmarks, visibility):
+        fps = 1 / (time.time() - self.prevTime)
+        self.prevTime = time.time()
+        self.visualize_buttons(img)
+        cv2.putText(img, f'FPS: {fps:.2f}', (10, 10),cv2.FONT_HERSHEY_SIMPLEX, .5, (255, 255, 255), 2, cv2.LINE_AA)
+
+        # Show the limbs
+        touching_hands = False
+
+        color = (0, 0, 255) if not touching_hands else (0, 255, 0)
+        for landmark_pos, vis in zip(smoothed_landmarks, visibility):
+            if vis > 0.4:
+                pos = (self.screensize[0] - int(landmark_pos[0]), int(landmark_pos[1]))
+                cv2.circle(img, pos, self.balloon_size, color, -1)
+
+    def visualize_main_menu(self, smoothed_landmarks,visibility):
+        img = np.ones((self.screensize[1], self.screensize[0], 3), dtype=np.uint8)
+        self.base_scene(img,smoothed_landmarks,visibility)
+
+        # Wait for 1 ms and check if the window should be closed
+        cv2.imshow('Keep the ball from entering the goal!', img)
         cv2.waitKey(1)
 
     def provide_feedback(self, frame, joints):
