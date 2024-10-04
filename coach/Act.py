@@ -68,7 +68,7 @@ class Act:
         # Show the ball
         #ball_color = (255,255,255) if not self.hit_screen else (0,255,0)
         ball_pos_int = (int(self.ball_pos[0]),int(self.ball_pos[1]))
-        ball_rad_int = int(self.ball_size)
+        ball_rad_int = max(int(self.ball_size),1)
 
         ball = cv2.resize(self.ball_graphic, (ball_rad_int,ball_rad_int))
         ball = self.rotate_image(ball,np.sin(self.ball_size * 10)*180)
@@ -147,7 +147,7 @@ class Act:
 
         self.put_centered_text(img, f'Catch the ball!',
                                (int(self.screensize[0] / 2), int(self.screensize[1] / 8 * 5)),font_scale=1.5,thickness=5)
-        self.put_centered_text(img, f'Try moving your hands to the glove outlines',
+        self.put_centered_text(img, f'Try moving both hands to the glove outlines',
                                (int(self.screensize[0] / 2), int(self.screensize[1] / 10*7)),font_scale=0.8)
         self.put_centered_text(img, f'Hover over buttons to interact!',
                                (int(self.screensize[0] / 2), int(self.screensize[1] / 11 * 10)), font_scale=0.8)

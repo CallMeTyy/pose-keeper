@@ -24,7 +24,7 @@ class Think(object):
         self.alpha = alpha  # Smoothing factor
         self.num_positions = num_positions  # Number of positions to smooth
         self.last_positions = [None] * num_positions  # Initialize last positions for each
-
+        self.score = 0
         self.ball_size = 5
         self.default_ball_pos = np.array((screensize[0]/2, screensize[1]/3*2))
         self.max_ball_size = min(screensize) / 6
@@ -35,9 +35,10 @@ class Think(object):
         self.reset_ball()
         self.buttons = []
         self.state = 2
-        self.score = 0
+
         self.max_lives = 5
         self.lives = 5
+        self.is_kicked = False
         self.ambience = vlc.MediaPlayer("coach/assets/ambience.wav")
         self.catch_sound = vlc.MediaPlayer("coach/assets/catch.mp3")
         self.kick_sound = vlc.MediaPlayer("coach/assets/kick.wav")
@@ -83,12 +84,16 @@ class Think(object):
         t_y = random.uniform(self.max_ball_size/2, self.screensize[1]-self.max_ball_size/2)
         self.target_pos = np.array((t_x, t_y))
         self.act.update_target(self.target_pos)
-        self.ball_size = 5
+        self.ball_size = -self.score * 2
+        self.is_kicked = False
     
     def move_ball(self, speed=0.05):
-        self.ball_size += speed * self.ball_size
+        self.ball_size += speed * max(abs(self.ball_size),10)
+        if self.ball_size > 0 and not self.is_kicked:
+            self.is_kicked = True
+            self.play_reset(self.kick_sound)
         dist = self.distance(self.ball_pos, self.target_pos)
-        if (dist > 2):
+        if dist > 2 and self.ball_size > 0:
             self.ball_pos += (self.target_pos - self.ball_pos)/np.linalg.norm(self.target_pos - self.ball_pos) * 4 * (0.9+dist/self.screensize[1]*3) * (25*speed)
         check_screen = self.max_ball_size - self.ball_size < 0.2
         moved_too_far = self.ball_size > self.max_ball_size + 10
@@ -160,13 +165,11 @@ class Think(object):
                     self.reset_ball()
                     self.play_reset(self.catch_sound)
                     self.play_reset(self.cheer_sound)
-                    self.play_reset(self.kick_sound)
                     self.play_random_mot()
                 else:
                     print("MISS")
                     self.lives -= 1
                     self.reset_ball()
-                    self.play_reset(self.kick_sound)
                     self.play_random_bad()
                     self.play_reset(self.miss_sound)
             if self.lives >= 1:

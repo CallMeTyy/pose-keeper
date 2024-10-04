@@ -76,8 +76,8 @@ class Sense:
 
         joint_index = joint_index_map[joint]
         landmark = landmarks.landmark[joint_index]
-        landmark.x = max(min(landmark.x*screensize[0],screensize[0]),0)
-        landmark.y = max(min(landmark.y*screensize[1],screensize[1]),0)
+        landmark.x = max(min(landmark.x*(screensize[0]-0.1)*1.2,screensize[0]),0)
+        landmark.y = max(min(landmark.y*(screensize[1]-0.1)*1.2,screensize[1]),0)
         return (landmark.x, landmark.y), landmark.visibility
 
     ### Example for defining a function that extracts an angle
