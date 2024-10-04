@@ -116,7 +116,7 @@ class Think(object):
     def set_screen(self, state):
         self.remove_buttons()
         if state == 0:
-            self.add_button(self.start_game, (int(self.screensize[0]/2), int(self.screensize[1]/2)),100, "Start")
+            self.add_button(self.start_game, (int(self.screensize[0]/2), int(self.screensize[1]/3*2)),100, "Start")
         elif state == 1:
             self.score = 0
             self.lives = self.max_lives
@@ -126,7 +126,7 @@ class Think(object):
 
     def update_state(self, smoothed_landmarks, visibility):
         if self.state == 0:
-            self.act.visualize_main_menu(smoothed_landmarks, visibility)
+            self.act.visualize_main_menu(smoothed_landmarks, visibility,self.score)
 
         elif self.state == 1:
             if self.move_ball(0.025 + self.score * 0.0025):

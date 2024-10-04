@@ -23,8 +23,12 @@ class Act:
         self.buttons = []
         self.game_bg = cv2.imread("coach/assets/field.png")
         self.main_menu_bg = cv2.imread("coach/assets/blurred_field.png")
-        self.left_hand = cv2.imread("coach/assets/left_hand.png")
-        self.right_hand = cv2.imread("coach/assets/right_hand.png")
+        self.left_hand = cv2.imread("coach/assets/left_hand.png",cv2.IMREAD_UNCHANGED)
+        self.right_hand = cv2.imread("coach/assets/right_hand.png",cv2.IMREAD_UNCHANGED)
+        self.left_foot = cv2.imread("coach/assets/left_hand.png",cv2.IMREAD_UNCHANGED)
+        self.right_foot = cv2.imread("coach/assets/right_hand.png",cv2.IMREAD_UNCHANGED)
+        self.graphics = [self.right_hand, self.left_hand, self.right_foot, self.left_foot]
+        self.ball_graphic = cv2.imread("coach/assets/ball.png",cv2.IMREAD_UNCHANGED)
 
     def update_ball(self, ball_pos, ball_size, hit_screen):
         self.ball_pos = ball_pos
@@ -41,7 +45,7 @@ class Act:
         for button in self.buttons:
             cv2.circle(background, button.pos, button.size, button.color, -1)
             cv2.circle(background, button.pos, int(button.size * button.progress), (200, 200, 255), -1)
-            cv2.putText(background, button.text, button.pos-np.array([button.size,0]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2, cv2.LINE_AA)
+            self.put_centered_text(background, button.text, button.pos, cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2)
 
 
     def visualize_game(self, smoothed_landmarks,visibility, score, lives):
@@ -54,10 +58,14 @@ class Act:
 
 
         # Show the ball
-        ball_color = (255,255,255) if not self.hit_screen else (0,255,0)
+        #ball_color = (255,255,255) if not self.hit_screen else (0,255,0)
         ball_pos_int = (int(self.ball_pos[0]),int(self.ball_pos[1]))
         ball_rad_int = int(self.ball_size)
-        cv2.circle(img, ball_pos_int, ball_rad_int, ball_color, -1)
+
+        ball = cv2.resize(self.ball_graphic, (ball_rad_int,ball_rad_int))
+        ball = self.rotate_image(ball,np.sin(self.ball_size * 10)*180)
+        self.place_image_on_top(img,ball,ball_pos_int)
+        #cv2.circle(img, ball_pos_int, ball_rad_int, ball_color, -1)
 
         # Show the place where the ball will go
         t_pos = (int(self.target_pos[0]), int(self.target_pos[1]))
@@ -84,17 +92,23 @@ class Act:
         # Show the limbs
         touching_hands = False
 
-        color = (0, 0, 255) if not touching_hands else (0, 255, 0)
-        for landmark_pos, vis in zip(smoothed_landmarks, visibility):
+        #color = (0, 0, 255) if not touching_hands else (0, 255, 0)
+        for i in range(len(smoothed_landmarks)):
+            vis = visibility[i]
+            landmark_pos = smoothed_landmarks[i]
             if vis > 0.4:
                 pos = (self.screensize[0] - int(landmark_pos[0]), int(landmark_pos[1]))
-                cv2.circle(img, pos, self.balloon_size, color, -1)
+                self.place_image_on_top(img, self.graphics[i], pos)
+                #cv2.circle(img, pos, self.balloon_size, color, -1)
 
-    def visualize_main_menu(self, smoothed_landmarks,visibility):
+
+    def visualize_main_menu(self, smoothed_landmarks,visibility,score):
         img = self.main_menu_bg#np.ones((self.screensize[1], self.screensize[0], 3), dtype=np.uint8)
         img = cv2.resize(img, self.screensize,interpolation = cv2.INTER_AREA)
         self.base_scene(img,smoothed_landmarks,visibility)
 
+        self.put_centered_text(img, f'YOUR SCORE WAS: {score}', (int(self.screensize[0]/2),int(self.screensize[1]/3))
+        , cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 4)
         # Wait for 1 ms and check if the window should be closed
         cv2.imshow('Keep the ball from entering the goal!', img)
         cv2.waitKey(1)
@@ -135,3 +149,69 @@ class Act:
 
         # Display the frame (for debugging purposes)
         cv2.imshow('Sport Coaching Program', frame)
+
+    @staticmethod
+    def rotate_image(image, angle):
+        # Get the dimensions of the image
+        (h, w) = image.shape[:2]
+
+        # Calculate the center of the image
+        center = (w // 2, h // 2)
+
+        # Get the rotation matrix (rotating by the given angle around the center)
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, scale=1.0)
+
+        # Perform the rotation using warpAffine
+        rotated_image = cv2.warpAffine(image, rotation_matrix, (w, h))
+
+        return rotated_image
+
+    @staticmethod
+    def place_image_on_top(base_img, overlay_img, position):
+        # Get dimensions of the base image and overlay image
+        base_h, base_w = base_img.shape[:2]
+        overlay_h, overlay_w = overlay_img.shape[:2]
+
+        # Calculate top-left corner for the overlay image to be centered
+        x_center, y_center = position
+        x1 = int(x_center - overlay_w // 2)
+        y1 = int(y_center - overlay_h // 2)
+
+        # Make sure the overlay image doesn't go out of bounds
+        if x1 < 0: x1 = 0
+        if y1 < 0: y1 = 0
+        if x1 + overlay_w > base_w: x1 = base_w - overlay_w
+        if y1 + overlay_h > base_h: y1 = base_h - overlay_h
+
+        # Extract the region of interest (ROI) from the base image where the overlay will be placed
+        roi = base_img[y1:y1 + overlay_h, x1:x1 + overlay_w]
+
+        # If overlay image has transparency, we need to handle alpha blending
+        if overlay_img.shape[2] == 4:  # Check if the overlay has an alpha channel
+            overlay_rgb = overlay_img[:, :, :3]
+            alpha = overlay_img[:, :, 3] / 255.0  # Normalize the alpha channel
+
+            # Blend the overlay with the ROI using alpha blending
+            for c in range(0, 3):
+                roi[:, :, c] = (1.0 - alpha) * roi[:, :, c] + alpha * overlay_rgb[:, :, c]
+        else:
+            # If there's no alpha channel, simply overwrite the ROI with the overlay
+            base_img[y1:y1 + overlay_h, x1:x1 + overlay_w] = overlay_img
+
+        return base_img
+
+    @staticmethod
+    def put_centered_text(image, text, position, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=1, color=(255, 255, 255),
+                          thickness=2):
+        # Get the text size (width, height) and the baseline
+        text_size, baseline = cv2.getTextSize(text, font, font_scale, thickness)
+        text_width, text_height = text_size
+
+        # Calculate the bottom-left corner for the text to be centered at the given position
+        x = position[0] - text_width // 2
+        y = position[1] + text_height // 2
+
+        # Place the text on the image
+        cv2.putText(image, text, (x, y), font, font_scale, color, thickness, lineType=cv2.LINE_AA)
+
+        return image
