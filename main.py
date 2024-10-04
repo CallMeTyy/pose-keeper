@@ -25,7 +25,7 @@ def main():
     think = Think.Think(act, screen_size,4,0.2)
 
     # Initialize the webcam capture
-    cap = cv2.VideoCapture(2)  # Use the default camera (0)
+    cap = cv2.VideoCapture(0)  # Use the default camera (0)
 
     score = 0
 

@@ -74,7 +74,8 @@ class Think(object):
         return check_screen
     
     def touching_ball(self, pos, radius):
-        return self.circle_circle(pos,radius,self.ball_pos,self.ball_size)
+        inverted_pos = (self.screensize[0]-int(pos[0]),int(pos[1]))
+        return self.circle_circle(inverted_pos,radius,self.target_pos,self.max_ball_size)
     
 
 
