@@ -84,17 +84,19 @@ class Think(object):
         t_y = random.uniform(self.max_ball_size/2, self.screensize[1]-self.max_ball_size/2)
         self.target_pos = np.array((t_x, t_y))
         self.act.update_target(self.target_pos)
-        self.ball_size = -self.score * 2
+        self.ball_size = -10
         self.is_kicked = False
     
     def move_ball(self, speed=0.05):
-        self.ball_size += speed * max(abs(self.ball_size),10)
+        self.ball_size += speed * max(self.ball_size,10)
         if self.ball_size > 0 and not self.is_kicked:
             self.is_kicked = True
             self.play_reset(self.kick_sound)
         dist = self.distance(self.ball_pos, self.target_pos)
-        if dist > 2 and self.ball_size > 0:
+        if dist > 5 and self.ball_size > 0:
             self.ball_pos += (self.target_pos - self.ball_pos)/np.linalg.norm(self.target_pos - self.ball_pos) * 4 * (0.9+dist/self.screensize[1]*3) * (25*speed)
+        else:
+            self.ball_pos = self.target_pos
         check_screen = self.max_ball_size - self.ball_size < 0.2
         moved_too_far = self.ball_size > self.max_ball_size + 10
         self.act.update_ball(self.ball_pos, self.ball_size, moved_too_far)
@@ -231,7 +233,7 @@ class Button(object):
         if self.image:
             self.image_graphic = cv2.imread(image, cv2.IMREAD_UNCHANGED)
 
-    def test_collision(self, other, other_rad = 100):
+    def test_collision(self, other, other_rad = 50):
         return Think.circle_circle(self.pos,self.size, other, other_rad)
 
     def run(self, hand_positions, invert_hands = False):
