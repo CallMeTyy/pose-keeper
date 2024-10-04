@@ -4,6 +4,7 @@ import math
 import numpy as np
 import random
 import time
+import vlc
 
 
 # Think Component: Decision Making
@@ -35,6 +36,20 @@ class Think(object):
         self.score = 0
         self.max_lives = 5
         self.lives = 5
+        self.ambience = vlc.MediaPlayer("coach/assets/ambience.wav")
+        self.catch_sound = vlc.MediaPlayer("coach/assets/catch.mp3")
+        self.kick_sound = vlc.MediaPlayer("coach/assets/kick.wav")
+        self.cheer_sound = vlc.MediaPlayer("coach/assets/cheer.wav")
+        self.cheer_sound.audio_set_volume(60)
+        self.miss_sound = vlc.MediaPlayer("coach/assets/aww.wav")
+        self.mot1_sound = vlc.MediaPlayer("coach/assets/mot1.mp3")
+        self.mot2_sound = vlc.MediaPlayer("coach/assets/mot2.mp3")
+        self.mot3_sound = vlc.MediaPlayer("coach/assets/mot3.mp3")
+        self.bad1_sound = vlc.MediaPlayer("coach/assets/bad1.mp3")
+        self.bad2_sound = vlc.MediaPlayer("coach/assets/bad2.mp3")
+        self.bad3_sound = vlc.MediaPlayer("coach/assets/bad3.mp3")
+        self.mot_sounds = [self.mot1_sound, self.mot2_sound,self.mot3_sound]
+        self.bad_sounds = [self.bad1_sound, self.bad2_sound,self.bad3_sound]
 
 
     def smooth(self, current_positions):
@@ -118,6 +133,7 @@ class Think(object):
         if state == 0:
             self.add_button(self.start_game, (int(self.screensize[0]/2), int(self.screensize[1]/3*2)),100, "Start")
         elif state == 1:
+            self.ambience.play()
             self.score = 0
             self.lives = self.max_lives
             self.add_button(self.main_menu, (50, 50), 50, "Exit")
@@ -127,16 +143,24 @@ class Think(object):
     def update_state(self, smoothed_landmarks, visibility):
         if self.state == 0:
             self.act.visualize_main_menu(smoothed_landmarks, visibility,self.score)
-
+        if self.ambience.get_state() == vlc.State.Ended:
+            self.play_reset(self.ambience)
         elif self.state == 1:
             if self.move_ball(0.025 + self.score * 0.0025):
                 if self.check_ball_collision(smoothed_landmarks, visibility):
                     self.score += 1
                     self.reset_ball()
+                    self.play_reset(self.catch_sound)
+                    self.play_reset(self.cheer_sound)
+                    self.play_reset(self.kick_sound)
+                    self.play_random_mot()
                 else:
                     print("MISS")
                     self.lives -= 1
                     self.reset_ball()
+                    self.play_reset(self.kick_sound)
+                    self.play_random_bad()
+                    self.play_reset(self.miss_sound)
             if self.lives >= 1:
                 self.act.visualize_game(smoothed_landmarks, visibility,self.score,self.lives)
             else:
@@ -147,6 +171,24 @@ class Think(object):
 
     def main_menu(self):
         self.set_screen(0)
+
+    def play_reset(self,audio):
+        if audio.get_state() == vlc.State.Ended:
+            audio.stop()
+        else:
+            audio.pause()
+        audio.set_time(0)
+        audio.play()
+
+    def play_random_mot(self):
+        if random.random() < max(0.2, 0.8-(self.score/50)):
+            index = math.floor(random.uniform(0,len(self.mot_sounds)))
+            self.play_reset(self.mot_sounds[index])
+
+    def play_random_bad(self):
+        if random.random() < max(0.2, 0.8-(self.score/50)):
+            index = math.floor(random.uniform(0,len(self.bad_sounds)))
+            self.play_reset(self.bad_sounds[index])
 
 
 class Button(object):

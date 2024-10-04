@@ -7,6 +7,7 @@ import random
 import pyttsx3
 import time
 
+
 # Act Component: Visualization to motivate user, visualization such as the skeleton and debugging information.
 # Things to add: Other graphical visualization, a proper GUI, more verbal feedback
 class Act:
@@ -27,6 +28,7 @@ class Act:
         self.right_hand = cv2.imread("coach/assets/right_hand.png",cv2.IMREAD_UNCHANGED)
         self.left_foot = cv2.imread("coach/assets/left_hand.png",cv2.IMREAD_UNCHANGED)
         self.right_foot = cv2.imread("coach/assets/right_hand.png",cv2.IMREAD_UNCHANGED)
+        self.leaderboard = cv2.imread("coach/assets/leaderboard.png",cv2.IMREAD_UNCHANGED)
         self.graphics = [self.right_hand, self.left_hand, self.right_foot, self.left_foot]
         self.ball_graphic = cv2.imread("coach/assets/ball.png",cv2.IMREAD_UNCHANGED)
         self.target_graphics = cv2.imread("coach/assets/transparent_gloves.png",cv2.IMREAD_UNCHANGED)
@@ -109,7 +111,13 @@ class Act:
         img = cv2.resize(img, self.screensize,interpolation = cv2.INTER_AREA)
         self.base_scene(img,smoothed_landmarks,visibility)
 
-        self.put_centered_text(img, f'YOUR SCORE WAS: {score}', (int(self.screensize[0]/2),int(self.screensize[1]/3))
+        self.put_centered_text(img, f'POSEKEEPER',
+                               (int(self.screensize[0] / 2), int(self.screensize[1] / 5)))
+
+        self.place_image_on_top(img,self.leaderboard, (int(self.screensize[0]/5), int(self.screensize[1]/4*3)))
+
+        if score > 0:
+            self.put_centered_text(img, f'YOUR SCORE WAS: {score}', (int(self.screensize[0]/2),int(self.screensize[1]/3))
         , cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 4)
         # Wait for 1 ms and check if the window should be closed
         cv2.imshow('Keep the ball from entering the goal!', img)
