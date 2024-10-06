@@ -1,11 +1,10 @@
 import cv2
-import mediapipe as mp
+
 from coach import Sense
 from coach import Think
 from coach import Act
 
 import numpy as np
-
 
 
 # Main Program Loop
@@ -17,17 +16,15 @@ def main():
     and starts the main loop to continuously process frames from the webcam.
     """
 
-    screen_size = (1080,720)
+    screen_size = (1080, 720)
 
     # Initialize the components: Sense for input, Think for decision-making, Act for output
     sense = Sense.Sense()
     act = Act.Act(screen_size)
-    think = Think.Think(act, screen_size,4,0.2)
-    think.set_screen(2) # Initialize the instructions
+    think = Think.Think(act, screen_size, 4, 0.2)
+    think.set_screen(2)     # Initialize the instructions
     # Initialize the webcam capture
     cap = cv2.VideoCapture(0)  # Use the default camera (0)
-
-
 
     # Main loop to process video frames
     while cap.isOpened():
@@ -44,18 +41,18 @@ def main():
 
         # If landmarks are detected, calculate the elbow angle
         if landmarks:
-            wrist_r_pos, w_r_vis = sense.extract_joint_coordinates(landmarks, screen_size,"right_wrist")
-            wrist_l_pos, w_l_vis = sense.extract_joint_coordinates(landmarks, screen_size,"left_wrist")
-            foot_r_pos, f_r_vis = sense.extract_joint_coordinates(landmarks, screen_size,"right_ankle")
-            foot_l_pos, f_l_vis = sense.extract_joint_coordinates(landmarks, screen_size,"left_ankle")
+            wrist_r_pos, w_r_vis = sense.extract_joint_coordinates(landmarks, screen_size, "right_wrist")
+            wrist_l_pos, w_l_vis = sense.extract_joint_coordinates(landmarks, screen_size, "left_wrist")
+            foot_r_pos, f_r_vis = sense.extract_joint_coordinates(landmarks, screen_size, "right_ankle")
+            foot_l_pos, f_l_vis = sense.extract_joint_coordinates(landmarks, screen_size, "left_ankle")
 
-            positions = np.array([wrist_r_pos, wrist_l_pos,foot_r_pos, foot_l_pos])
-            visibility = np.array([w_r_vis, w_l_vis,f_r_vis, f_l_vis])
+            positions = np.array([wrist_r_pos, wrist_l_pos, foot_r_pos, foot_l_pos])
+            visibility = np.array([w_r_vis, w_l_vis, f_r_vis, f_l_vis])
             smoothed_landmarks = think.smooth(positions)
 
-            think.update_buttons([smoothed_landmarks[0],smoothed_landmarks[1]])
+            think.update_buttons([smoothed_landmarks[0], smoothed_landmarks[1]])
 
-            #touching_hands = think.circle_circle(smoothed_landmarks[0],100,smoothed_landmarks[1],100)
+            # touching_hands = think.circle_circle(smoothed_landmarks[0],100,smoothed_landmarks[1],100)
 
             act.provide_feedback(frame=frame, joints=joints)
             think.update_state(smoothed_landmarks, visibility)
